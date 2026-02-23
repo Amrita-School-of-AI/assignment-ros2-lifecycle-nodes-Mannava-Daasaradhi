@@ -35,19 +35,62 @@ public:
 
     // TODO: Implement on_configure callback
     // CallbackReturn on_configure(const rclcpp_lifecycle::State &)
-
+    CallbackReturn on_configure(const rclcpp_lifecycle::State &) override
+    {
+        publisher_ = this->create_publisher<std_msgs::msg::Float64>("/sensor_data", 10);
+        RCLCPP_INFO(this->get_logger(), "Sensor configured");
+        return CallbackReturn::SUCCESS;
+    }
     // TODO: Implement on_activate callback
     // CallbackReturn on_activate(const rclcpp_lifecycle::State &)
-
+    CallbackReturn on_activate(const rclcpp_lifecycle::State &) override
+    {
+        // Start the timer to publish every 500ms
+        timer_ = this->create_wall_timer(500ms, std::bind(&LifecycleSensor::timer_callback, this));
+        
+        // Dynamically cast to LifecyclePublisher to call on_activate()
+        auto lifecycle_pub = std::dynamic_pointer_cast<rclcpp_lifecycle::LifecyclePublisher<std_msgs::msg::Float64>>(publisher_);
+        if (lifecycle_pub) {
+            lifecycle_pub->on_activate();
+        }
+        
+        RCLCPP_INFO(this->get_logger(), "Sensor activated");
+        return CallbackReturn::SUCCESS;
+    }
     // TODO: Implement on_deactivate callback
     // CallbackReturn on_deactivate(const rclcpp_lifecycle::State &)
-
+    CallbackReturn on_deactivate(const rclcpp_lifecycle::State &) override
+    {
+        // Stop the timer
+        timer_.reset();
+        
+        // Dynamically cast to LifecyclePublisher to call on_deactivate()
+        auto lifecycle_pub = std::dynamic_pointer_cast<rclcpp_lifecycle::LifecyclePublisher<std_msgs::msg::Float64>>(publisher_);
+        if (lifecycle_pub) {
+            lifecycle_pub->on_deactivate();
+        }
+        
+        RCLCPP_INFO(this->get_logger(), "Sensor deactivated");
+        return CallbackReturn::SUCCESS;
+    }
     // TODO: Implement on_cleanup callback
     // CallbackReturn on_cleanup(const rclcpp_lifecycle::State &)
-
+    CallbackReturn on_cleanup(const rclcpp_lifecycle::State &) override
+    {
+        timer_.reset();
+        publisher_.reset();
+        RCLCPP_INFO(this->get_logger(), "Sensor cleaned up");
+        return CallbackReturn::SUCCESS;
+    }
     // TODO: Implement on_shutdown callback
     // CallbackReturn on_shutdown(const rclcpp_lifecycle::State &)
-
+    CallbackReturn on_shutdown(const rclcpp_lifecycle::State &) override
+    {
+        timer_.reset();
+        publisher_.reset();
+        RCLCPP_INFO(this->get_logger(), "Sensor shutting down");
+        return CallbackReturn::SUCCESS;
+    }
 private:
     void timer_callback()
     {
